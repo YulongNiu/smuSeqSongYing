@@ -14,12 +14,20 @@ names <- sapply(smugff[, 9], function(x) {
 names <- t(names)
 colnames(names) <- c('geneNames', 'Anno')
 smugff <- cbind(smugff, names)
+smugff$loc <- paste(smugff$V4, smugff$V5, sep = '..')
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~add ptt/rnt~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+smuptt <- read.delim('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/genomes/Streptococcus_mutans_UA159/NC_004350.ptt', skip = 2, stringsAsFactor = FALSE)
+smurnt <- read.delim('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/genomes/Streptococcus_mutans_UA159/NC_004350.rnt', skip = 2, stringsAsFactor = FALSE)
+smuannot <- rbind(smuptt, smurnt)
 
+## deal with slash
+slashLogic <- smuannot[, 'Gene'] == '-'
+smuannot[slashLogic, 'Gene'] <- smuannot[slashLogic, 'Synonym']
+
+smumerge <- merge(smugff, smuannot, by.x = 'loc', by.y = 'Location')
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-
+save(smumerge, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/smumerge.RData')
 ######################################################################
