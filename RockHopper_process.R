@@ -106,22 +106,26 @@ res <- cbind(as.matrix(mcols(glioPR)[, 1:10]), assay(rld))
 anno <- deg[match(rownames(res), deg[, 1]), 1:8]
 res <- cbind(anno, res[, 11:16], data.frame(resRaw[, c(5, 6, 2)]))
 res <- res[order(res[, 'padj']), ]
-write.csv(res, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2.csv')
+write.csv(res, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2_whole.csv')
+
+## padj < 0.01 & |log2FC| > 1
+resSig <- res[res$padj < 0.01 & abs(res$log2FoldChange) > 1, ]
+write.csv(resSig, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2_DEG.csv')
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~heat map~~~~~~~~~~~~~~~~~~~~~~~~~~
-topNum <- 200
+topNum <- nrow(resSig)
 heatmapCount <- resSig[1:topNum, 9:14]
 heatmapCount <- apply(heatmapCount, 1:2, as.numeric)
 rownames(heatmapCount) <- resSig[1:topNum, 'Names']
 
 annoCol <- data.frame(Group = colData(glioPR)[, 1])
 row.names(annoCol) <- rownames(colData(glioPR))
-annoColor <- list(Group = c(WT = '#00C19F', Mutant = '#F8766D'))
+annoColor <- list(Group = c(WT = '#00C19F', deltasrtA = '#F8766D'))
 ## annoRow = data.frame(GeneClass = factor(rep(c("Path1", "Path2", "Path3"), c(30, 30, 40))))
 ## rownames(annoRow) <- rownames(heatmapCount)
-pdf('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/DESeq2_heatmap_top200.pdf')
+pdf('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/DESeq2_heatmap_whole.pdf')
 pheatmap(heatmapCount, annotation_col = annoCol, annotation_colors = annoColor, fontsize=12, fontsize_row=2, annotation_legend = TRUE)
 dev.off()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
