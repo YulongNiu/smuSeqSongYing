@@ -78,7 +78,6 @@ library('DESeq2')
 library('ggplot2')
 library('directlabels')
 library('genefilter')
-library('PoiClaClu')
 library('pheatmap')
 
 setwd('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results')
@@ -88,7 +87,7 @@ deg <- read.csv('deg.csv', row.names = 1, stringsAsFactor = FALSE)
 htCountSelect <- deg[, c(9:11, 13:15)]
 rownames(htCountSelect) <- deg[, 1]
 
-targets <- data.frame(Group = factor(c('WT', 'WT', 'WT', 'Mutant', 'Mutant', 'Mutant')), Sample = paste0('smu', 1:6))
+targets <- data.frame(Group = factor(c('WT', 'WT', 'WT', 'deltasrtA', 'deltasrtA', 'deltasrtA')), Sample = paste0('smu', 1:6))
 rownames(targets) <- paste0(targets$Group, c(1:3, 1:3))
 colnames(htCountSelect) <- rownames(targets)
 glioPR <- DESeqDataSetFromMatrix(countData = htCountSelect, colData = targets, design = ~Group)
@@ -106,8 +105,8 @@ summary(resRaw)
 res <- cbind(as.matrix(mcols(glioPR)[, 1:10]), assay(rld))
 anno <- deg[match(rownames(res), deg[, 1]), 1:8]
 res <- cbind(anno, res[, 11:16], data.frame(resRaw[, c(5, 6, 2)]))
+res <- res[order(res[, 'padj']), ]
 write.csv(res, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2.csv')
-resSig <- res[order(as.numeric(res[, 'padj'])), ]
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
