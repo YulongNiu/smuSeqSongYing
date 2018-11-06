@@ -5,6 +5,7 @@
 .Rproj.user/
 .directory
 
+
 # object and shared objects
 *.o
 *.so
@@ -16,7 +17,10 @@
 # html reports
 *.html
 
-nohup.out
-
 # office file
 *.xlsx
+
+
+# folders
+rawdata/
+figure_request/
