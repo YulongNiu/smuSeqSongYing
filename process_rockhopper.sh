@@ -3,11 +3,13 @@ BAM_PATH=/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/
 
 cd ${BAM_PATH}
 
-bamfiles=($(ls | grep sam))
+samfiles=($(ls | grep bam))
 
-for j in "${bamfiles[@]}"
+for j in "${samfiles[@]}"
 do
     echo ${j}
     echo ${j%%.*}.bam
     ${SAMTOOLS_PATH}/samtools sort -@ 8 -o ${j%.*}.bam ${j}
+    ${SAMTOOLS_PATH}/samtools index ${j%.*}.bam
+    rm ${j}
 done
