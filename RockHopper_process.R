@@ -38,13 +38,15 @@ library('magrittr')
 setwd('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results')
 
 load('smumerge.RData')
+
 deg4h <- read.csv('4h_NC_004350_transcripts.txt', sep = '\t') %>%
   merge(smumerge, ., by.x = 'Synonym', by.y = 'Synonym')
 
-deg4h <- read.csv('4h_NC_004350_transcripts.txt', sep = '\t') %>%
+deg24h <- read.csv('24h_NC_004350_transcripts.txt', sep = '\t') %>%
   merge(smumerge, ., by.x = 'Synonym', by.y = 'Synonym')
 
 deg <- deg4h[, c(1, 26, 12, 6, 7, 13, 15, 19, 28:30, 36:38)]
+deg <- cbind(deg, deg24h[, c(28:30, 36:38)])
 
 
 
