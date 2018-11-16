@@ -47,14 +47,9 @@ deg24h <- read.csv('24h_NC_004350_transcripts.txt', sep = '\t') %>%
 
 deg <- deg4h[, c(1, 26, 12, 6, 7, 13, 15, 19, 28:30, 36:38)]
 deg <- cbind(deg, deg24h[, c(28:30, 36:38)])
-
-
-deg24h <- read.csv('24h_NC_004350_transcripts.txt', sep = '\t') %>%
-  merge(smumerge, ., by.x = 'Synonym', by.y = 'Synonym')
-
 ## deg$log2FC <- log2((deg[, 'RPKM.2'] + 1)/(deg[, 'RPKM.1'] + 1))
 
-colnames(deg) <- c('GeneID', 'Symbol', 'Names', 'Start', 'End', 'Product', 'Length', 'COG',paste0('RawCountControl4h', 1:3), paste0('RawCountMutant4h', 1:3))
+colnames(deg) <- c('GeneID', 'Symbol', 'Names', 'Start', 'End', 'Product', 'Length', 'COG', paste0('RawCountControl4h', 1:3), paste0('RawCountMutant4h', 1:3), paste0('RawCountControl24h', 1:3), paste0('RawCountMutant24h', 1:3))
 
 write.csv(deg, 'deg.csv')
 #############################################################
@@ -67,11 +62,12 @@ library('directlabels')
 library('genefilter')
 library('pheatmap')
 
-setwd('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/Rockhopper_Results')
+setwd('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results')
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~build target and DEGlist object~~~~~~~~~~~~~~
 deg <- read.csv('deg.csv', row.names = 1, stringsAsFactor = FALSE)
-htCountSelect <- deg[, c(9:11, 13:15)]
+htCountSelect <- deg[, c(9:14)]
+## htCountSelect <- deg[, c(15:20)]
 rownames(htCountSelect) <- deg[, 1]
 
 targets <- data.frame(Group = factor(c('WT', 'WT', 'WT', 'deltasrtA', 'deltasrtA', 'deltasrtA')), Sample = paste0('smu', 1:6))
@@ -84,8 +80,8 @@ glioPR <- DESeqDataSetFromMatrix(countData = htCountSelect, colData = targets, d
 glioPR <- glioPR[rowSums(counts(glioPR)) > 1, ]
 glioPR <- DESeq(glioPR)
 ## count transformation
-rld <- rlog(glioPR)
-vst <- varianceStabilizingTransformation(glioPR)
+## rld <- rlog(glioPR)
+## vst <- varianceStabilizingTransformation(glioPR)
 resRaw <- results(glioPR)
 resRaw[, 2] <- -resRaw[, 2]
 summary(resRaw)
@@ -93,13 +89,23 @@ res <- cbind(as.matrix(mcols(glioPR)[, 1:10]), assay(rld))
 anno <- deg[match(rownames(res), deg[, 1]), 1:8]
 res <- cbind(anno, res[, 11:16], data.frame(resRaw[, c(5, 6, 2)]))
 res <- res[order(res[, 'padj']), ]
-write.csv(res, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2_whole.csv')
+write.csv(res, file = '/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/degseq24h_whole.csv')
 
 ## padj < 0.01 & |log2FC| > 1
-resSig <- res[res$padj < 0.01 & abs(res$log2FoldChange) > 1, ]
-write.csv(resSig, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2_DEG.csv')
+sigLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > 1
+sigLogic[is.na(sigLogic)] <- FALSE
+resSig <- res[sigLogic, ]
+write.csv(resSig, file = '/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/degseq24h_DEG.csv')
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~compare DEG~~~~~~~~~~~~~~~~~~~~~~~
+setwd('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results')
+
+deg4h <- read.csv('degseq4h_DEG.csv', row.names = 1, stringsAsFactor = FALSE)
+deg24h <- read.csv('degseq24h_DEG.csv', row.names = 1, stringsAsFactor = FALSE)
+
+intersect(deg4h$GeneID, deg24h$GeneID)
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~heat map~~~~~~~~~~~~~~~~~~~~~~~~~~
 topNum <- nrow(resSig)
