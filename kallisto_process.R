@@ -75,7 +75,7 @@ res <- res[order(res[, 'padj']), ]
 write.csv(res, file = '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_whole.csv', row.names = FALSE)
 
 ## padj < 0.01 & |log2FC| > 1
-sigLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > 1
+sigLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > log2(1.5)
 sigLogic[is.na(sigLogic)] <- FALSE
 resSig <- res[sigLogic, ]
 write.csv(resSig, file = '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_DEG.csv', row.names = FALSE)
@@ -107,18 +107,53 @@ resSig <- res[sigLogic, ]
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ###########################################################
 
-############################compare with anno####################
+############################compare DEG####################
+library('magrittr')
+library('venn')
+
+setwd('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results')
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~with anno~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 anno24h <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/targetDGE/24h_DEG_anno.txt', stringsAsFactor = FALSE, header = FALSE, row.names = NULL, sep = '\t')
 
 anno4h <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/targetDGE/4h_DEG_anno.txt', stringsAsFactor = FALSE, header = FALSE, row.names = NULL, sep = '\t')
 
-degseq24h <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_whole.csv', stringsAsFactor = FALSE)
+degseq24h <- read.csv('degseq24h_whole.csv', stringsAsFactor = FALSE)
 
-degseq4h <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq4h_whole.csv', stringsAsFactor = FALSE)
+degseq4h <- read.csv('degseq4h_whole.csv', stringsAsFactor = FALSE)
 
 test24h <- merge(degseq24h, anno24h, by.y = 'V1', by.x = 'GeneID')
-write.csv(test24h, '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/test24h.csv')
+write.csv(test24h, 'test24h.csv')
 
 test4h <- merge(degseq4h, anno4h, by.y = 'V1', by.x = 'GeneID')
-write.csv(test4h, '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/test4h.csv')
+write.csv(test4h, 'test4h.csv')
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~compare DEG~~~~~~~~~~~~~~~~~~~~~~~
+deg4h <- read.csv('degseq4h_DEG_FC2.csv', stringsAsFactor = FALSE)
+deg24h <- read.csv('degseq24h_DEG_FC2.csv', stringsAsFactor = FALSE)
+
+colnames(deg4h)[9:17] %<>% paste(., '4h', sep = '_')
+colnames(deg24h)[9:17] %<>% paste(., '24h', sep = '_')
+
+deg24h %<>% `[`(., , c(1, 9:17))
+commonDEG <- merge(deg4h, deg24h, by.x = 'GeneID', by.y = 'GeneID')
+
+write.csv(commonDEG, 'degseq_4h24h_DEG_FC1dot5.csv')
+
+## venn plot
+cairo_pdf('venn_FC2.pdf')
+venn(list(deg4h$GeneID, deg24h$GeneID),
+     snames = c('Exponential phase DEGs', 'Stationary phase DEGs'),
+     ilab = TRUE,
+     zcolor = 'style',
+     size = 25,
+     cexil = 1.2,
+     cexsn = 1.5)
+dev.off()
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 #################################################################
+
+

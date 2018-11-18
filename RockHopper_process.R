@@ -98,14 +98,7 @@ resSig <- res[sigLogic, ]
 write.csv(resSig, file = '/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/degseq24h_DEG.csv')
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~compare DEG~~~~~~~~~~~~~~~~~~~~~~~
-setwd('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results')
 
-deg4h <- read.csv('degseq4h_DEG.csv', row.names = 1, stringsAsFactor = FALSE)
-deg24h <- read.csv('degseq24h_DEG.csv', row.names = 1, stringsAsFactor = FALSE)
-
-intersect(deg4h$GeneID, deg24h$GeneID)
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~heat map~~~~~~~~~~~~~~~~~~~~~~~~~~
 topNum <- nrow(resSig)
