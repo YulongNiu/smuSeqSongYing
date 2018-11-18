@@ -11,7 +11,7 @@ RES_PATH=${PROJECT_PATH}/kallisto_results
 # ## build index
 # ${KALLISTO_PATH}/kallisto index \
 #                 -i ${INDEX_PATH}/smu_kallisto_idx \
-#                 ${INDEX_PATH}/Streptococcus_mutans_ua159.ASM746v2.cdna.all.fa.gz
+#                 ${INDEX_PATH}/NC_004350_cdna_name.fa
 
 ## quantification
 cd ${CLEAN_PATH}
