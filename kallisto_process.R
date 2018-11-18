@@ -21,7 +21,11 @@ names(smucdna) <- deg$GeneID
 writeXStringSet(smucdna, '/home/Yulong/Biotools/RefData/smu/NC_004350_cdna_name.fa')
 #############################################################
 
+
 ###########################k res####################
+deg <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/deg.csv', row.names = 1, stringsAsFactor = FALSE) %>%
+  `[`(., , 1:8)
+
 ##~~~~~~~~~~~~~~~~~~~~~~~~~import~~~~~~~~~~~~~~~~~~~~~
 library('tximport')
 library('rhdf5')
@@ -37,18 +41,25 @@ files <- file.path(wd, fmember, 'abundance.h5')
 names(files) <- fmember
 txi.kallisto <- tximport(files, type = 'kallisto', txOut = TRUE)
 
+## 4h
 htCountSelect <- txi.kallisto
 htCountSelect$abundance %<>% `[`(., , 1:6)
 htCountSelect$counts %<>% `[`(., , 1:6)
 htCountSelect$length %<>% `[`(., , 1:6)
 
+## 24h
+htCountSelect <- txi.kallisto
+htCountSelect$abundance %<>% `[`(., 7:12)
+htCountSelect$counts %<>% `[`(., , 7:12)
+htCountSelect$length %<>% `[`(., , 7:12)
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DESeq2 analysis~~~~~~~~~~~~~~~~~~~~
 targets <- data.frame(Group = factor(c('WT', 'WT', 'WT', 'deltasrtA', 'deltasrtA', 'deltasrtA')), Sample = paste0('smu', 1:6))
 rownames(targets) <- paste0(targets$Group, c(1:3, 1:3))
 colnames(htCountSelect$counts) <- rownames(targets)
 glioPR <- DESeqDataSetFromTximport(htCountSelect, colData = targets, design = ~Group)
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DESeq2 analysis~~~~~~~~~~~~~~~~~~~~
 glioPR <- glioPR[rowSums(counts(glioPR)) > 1, ]
 glioPR <- DESeq(glioPR)
 ## count transformation
@@ -60,16 +71,14 @@ summary(resRaw)
 res <- cbind(as.matrix(mcols(glioPR)[, 1:10]), assay(rld))
 anno <- deg[match(rownames(res), deg[, 1]), 1:8]
 res <- cbind(anno, res[, 11:16], data.frame(resRaw[, c(5, 6, 2)]))
-
-res <- cbind(res[, 11:16], data.frame(resRaw[, c(5, 6, 2)]))
 res <- res[order(res[, 'padj']), ]
-write.csv(res, file = '/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/degseq24h_whole.csv')
+write.csv(res, file = '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_whole.csv', row.names = FALSE)
 
 ## padj < 0.01 & |log2FC| > 1
 sigLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > 1
 sigLogic[is.na(sigLogic)] <- FALSE
 resSig <- res[sigLogic, ]
-write.csv(resSig, file = '/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/degseq24h_DEG.csv')
+write.csv(resSig, file = '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_DEG.csv', row.names = FALSE)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~~~edgeR~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,3 +106,19 @@ sigLogic[is.na(sigLogic)] <- FALSE
 resSig <- res[sigLogic, ]
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ###########################################################
+
+############################compare with anno####################
+anno24h <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/targetDGE/24h_DEG_anno.txt', stringsAsFactor = FALSE, header = FALSE, row.names = NULL, sep = '\t')
+
+anno4h <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/targetDGE/4h_DEG_anno.txt', stringsAsFactor = FALSE, header = FALSE, row.names = NULL, sep = '\t')
+
+degseq24h <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_whole.csv', stringsAsFactor = FALSE)
+
+degseq4h <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq4h_whole.csv', stringsAsFactor = FALSE)
+
+test24h <- merge(degseq24h, anno24h, by.y = 'V1', by.x = 'GeneID')
+write.csv(test24h, '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/test24h.csv')
+
+test4h <- merge(degseq4h, anno4h, by.y = 'V1', by.x = 'GeneID')
+write.csv(test4h, '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/test4h.csv')
+#################################################################

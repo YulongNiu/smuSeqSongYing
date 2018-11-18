@@ -8,10 +8,10 @@ PROJECT_PATH=/extDisk1/RESEARCH/smuSeqSongYing
 CLEAN_PATH=${PROJECT_PATH}/cleandata
 RES_PATH=${PROJECT_PATH}/kallisto_results
 
-# ## build index
-# ${KALLISTO_PATH}/kallisto index \
-#                 -i ${INDEX_PATH}/smu_kallisto_idx \
-#                 ${INDEX_PATH}/NC_004350_cdna_name.fa
+## build index
+${KALLISTO_PATH}/kallisto index \
+                -i ${INDEX_PATH}/smu_kallisto_idx \
+                ${INDEX_PATH}/NC_004350_cdna_name.fa
 
 ## quantification
 cd ${CLEAN_PATH}
