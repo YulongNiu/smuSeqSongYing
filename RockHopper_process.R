@@ -66,8 +66,8 @@ setwd('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results')
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~build target and DEGlist object~~~~~~~~~~~~~~
 deg <- read.csv('deg.csv', row.names = 1, stringsAsFactor = FALSE)
-htCountSelect <- deg[, c(9:14)]
-## htCountSelect <- deg[, c(15:20)]
+## htCountSelect <- deg[, c(9:14)]
+htCountSelect <- deg[, c(15:20)]
 rownames(htCountSelect) <- deg[, 1]
 
 targets <- data.frame(Group = factor(c('WT', 'WT', 'WT', 'deltasrtA', 'deltasrtA', 'deltasrtA')), Sample = paste0('smu', 1:6))
@@ -80,8 +80,8 @@ glioPR <- DESeqDataSetFromMatrix(countData = htCountSelect, colData = targets, d
 glioPR <- glioPR[rowSums(counts(glioPR)) > 1, ]
 glioPR <- DESeq(glioPR)
 ## count transformation
-## rld <- rlog(glioPR)
-## vst <- varianceStabilizingTransformation(glioPR)
+rld <- rlog(glioPR)
+vst <- varianceStabilizingTransformation(glioPR)
 resRaw <- results(glioPR)
 resRaw[, 2] <- -resRaw[, 2]
 summary(resRaw)
@@ -91,8 +91,8 @@ res <- cbind(anno, res[, 11:16], data.frame(resRaw[, c(5, 6, 2)]))
 res <- res[order(res[, 'padj']), ]
 write.csv(res, file = '/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/degseq24h_whole.csv')
 
-## padj < 0.01 & |log2FC| > 1
-sigLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > 1
+## padj < 0.01 & |log2FC| > 1.5
+sigLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > log(1.5)
 sigLogic[is.na(sigLogic)] <- FALSE
 resSig <- res[sigLogic, ]
 write.csv(resSig, file = '/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/degseq24h_DEG.csv')
