@@ -23,9 +23,6 @@ writeXStringSet(smucdna, '/home/Yulong/Biotools/RefData/smu/NC_004350_cdna_name.
 
 
 ###########################k res####################
-deg <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/deg.csv', row.names = 1, stringsAsFactor = FALSE) %>%
-  `[`(., , 1:8)
-
 ##~~~~~~~~~~~~~~~~~~~~~~~~~import~~~~~~~~~~~~~~~~~~~~~
 library('tximport')
 library('rhdf5')
@@ -55,6 +52,9 @@ htCountSelect$length %<>% `[`(., , 7:12)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DESeq2 analysis~~~~~~~~~~~~~~~~~~~~
+deg <- read.csv('/extDisk1/RESEARCH/smuSeqSongYing/Rockhopper_Results/deg.csv', row.names = 1, stringsAsFactor = FALSE) %>%
+  `[`(., , 1:8)
+
 targets <- data.frame(Group = factor(c('WT', 'WT', 'WT', 'deltasrtA', 'deltasrtA', 'deltasrtA')), Sample = paste0('smu', 1:6))
 rownames(targets) <- paste0(targets$Group, c(1:3, 1:3))
 colnames(htCountSelect$counts) <- rownames(targets)
@@ -80,6 +80,46 @@ sigLogic[is.na(sigLogic)] <- FALSE
 resSig <- res[sigLogic, ]
 write.csv(resSig, file = '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_DEG.csv', row.names = FALSE)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~heat map~~~~~~~~~~~~~~~~~~~~~~~~~~
+library('pheatmap')
+
+## use rld
+topNum <- nrow(resSig)
+heatmapCount <- resSig[1:topNum, 9:14]
+heatmapCount <- apply(heatmapCount, 1:2, as.numeric)
+rownames(heatmapCount) <- resSig[1:topNum, 'Names']
+
+annoCol <- data.frame(Group = colData(glioPR)[, 1])
+row.names(annoCol) <- rownames(colData(glioPR))
+annoColor <- list(Group = c(WT = '#00C19F', deltasrtA = '#F8766D'))
+## annoRow = data.frame(GeneClass = factor(rep(c("Path1", "Path2", "Path3"), c(30, 30, 40))))
+## rownames(annoRow) <- rownames(heatmapCount)
+cairo_pdf('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq4h_top50_heatmap.pdf')
+pheatmap(heatmapCount, annotation_col = annoCol, annotation_colors = annoColor, fontsize=12, fontsize_row=7, annotation_legend = TRUE)
+dev.off()
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~PCA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+library('directlabels')
+library('ggplot2')
+
+pca <- prcomp(t(assay(rld)))
+percentVar <- pca$sdev^2/sum(pca$sdev^2)
+percentVar <- round(100 * percentVar)
+pca1 <- pca$x[,1]
+pca2 <- pca$x[,2]
+pcaData <- data.frame(PC1 = pca1, PC2 = pca2, Group = colData(rld)[, 1], ID = rownames(colData(rld)))
+pdf('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_PCA.pdf')
+groupCol <- c('#00C19F', '#F8766D')
+ggplot(pcaData, aes(x = PC1, y = PC2, colour = Group)) +
+  geom_point(size = 3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) +
+  scale_color_manual(values = groupCol) +
+  geom_dl(aes(label = ID, color = Group), method = 'smart.grid')
+dev.off()
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~~~edgeR~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cts <- htCountSelect$counts
