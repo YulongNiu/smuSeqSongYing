@@ -46,7 +46,7 @@ registerDoMC(8)
 
 load('smuGO.RData')
 load('smuKEGG.RData')
-res <- read.csv('degseq24h_whole.csv', stringsAsFactor = FALSE)
+res <- read.csv('degseq4h_whole.csv', stringsAsFactor = FALSE)
 
 ## remove 0 terms
 smuGO %<>% `[`(sapply(smuGO, length) > 0)
@@ -81,7 +81,7 @@ GOTestWithCat$abLogFC <- abLogFC
 termCat <- c('BP', 'MF', 'CC')
 for (i in termCat) {
   write.csv(GOTestWithCat[GOTestWithCat$ontology == i, ],
-            paste0('degseq24h_FC2_', i, '_withcat.csv'))
+            paste0('degseq4h_FC2_', i, '_withcat.csv'))
 }
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -102,6 +102,9 @@ KEGGMat <- as.data.frame(KEGGMat)
 
 KEGGTestWithCat <- goseq(pwf, gene2cat = KEGGMat, use_genes_without_cat = FALSE)
 KEGGTestWithCat$term <- pathAnno[match(KEGGTestWithCat[, 'category'], pathAnno[, 1]), 2]
+KEGGTestWithCat$term %<>%
+  strsplit(., split = ' - ', fixed  = TRUE) %>%
+  sapply(., `[`, 1)
 KEGGTestWithCat$ontology <- 'KEGG'
 
 goSub <- smuKEGG[match(KEGGTestWithCat[, 1], names(smuKEGG))]
@@ -111,6 +114,45 @@ abLogFC <- sapply(goSub, function(x) {
 })
 KEGGTestWithCat$abLogFC <- abLogFC
 
-write.csv(KEGGTestWithCat, file = 'degseq24h_FC2_KEGG_withcat.csv')
+write.csv(KEGGTestWithCat, file = 'degseq4h_FC2_KEGG_withcat.csv')
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ################################################################
+
+########################geneset plot###########################
+setwd('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results')
+
+library('ggplot2')
+library('RColorBrewer')
+library('latex2exp')
+library('magrittr')
+
+fname <- dir(pattern = 'withcat')
+fbasename <- fname %>%
+  strsplit(., split = '.', fixed = TRUE) %>%
+  sapply(., `[`, 1)
+
+
+for (i in seq_along(fname)) {
+##for (i in 1:2) {
+  pMat <- read.csv(fname[i], row.names = 1, stringsAsFactor = FALSE)
+
+  ## pvalue < 0.05
+  plotpMat <- pMat[, c('term', 'numDEInCat', 'over_represented_pvalue', 'abLogFC')]
+  plotpMat[, 3] <- -log10(plotpMat[, 3])
+  colnames(plotpMat) <- c('Name', 'Size', 'logpvalue', 'ablogFC')
+
+  colorPal <- colorRampPalette(rev(c('red', 'yellow', 'cyan', 'blue')), bias=1)(10)
+
+  ggplot(plotpMat[plotpMat[, 'logpvalue'] >= -log10(0.05), ], aes(x = ablogFC, y = Name)) +
+    geom_point(aes(size = Size, colour = logpvalue)) +
+    scale_size_continuous(name = 'Number of significant genes', range = c(3,8)) +
+    scale_colour_gradientn(name = '-log10(P-value)', limits=c(0, max(plotpMat[, 3])), colours = colorPal) +
+    ylab('') +
+    xlab(TeX('Average |$\\log_{2}$FC|')) +
+    theme(legend.position = 'bottom',
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 13),
+          axis.title.x = element_text(size = 13, face = 'bold'))
+  ggsave(paste0(fbasename[i], '.pdf'), width = 13)
+}
+###############################################################
