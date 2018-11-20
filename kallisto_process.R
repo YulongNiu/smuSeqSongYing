@@ -72,7 +72,7 @@ res <- cbind(as.matrix(mcols(glioPR)[, 1:10]), assay(rld))
 anno <- deg[match(rownames(res), deg[, 1]), 1:8]
 res <- cbind(anno, res[, 11:16], data.frame(resRaw[, c(5, 6, 2)]))
 res <- res[order(res[, 'padj']), ]
-write.csv(res, file = '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_whole.csv', row.names = FALSE)
+Write.Csv(res, file = '/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_whole.csv', row.names = FALSE)
 
 ## padj < 0.01 & |log2FC| > 1
 sigLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > log2(1.5)
@@ -95,7 +95,7 @@ row.names(annoCol) <- rownames(colData(glioPR))
 annoColor <- list(Group = c(WT = '#00C19F', deltasrtA = '#F8766D'))
 ## annoRow = data.frame(GeneClass = factor(rep(c("Path1", "Path2", "Path3"), c(30, 30, 40))))
 ## rownames(annoRow) <- rownames(heatmapCount)
-cairo_pdf('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq4h_top50_heatmap.pdf')
+cairo_pdf('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_top50_heatmap.pdf')
 pheatmap(heatmapCount, annotation_col = annoCol, annotation_colors = annoColor, fontsize=12, fontsize_row=7, annotation_legend = TRUE)
 dev.off()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,7 +111,7 @@ pca1 <- pca$x[,1]
 pca2 <- pca$x[,2]
 pcaData <- data.frame(PC1 = pca1, PC2 = pca2, Group = colData(rld)[, 1], ID = rownames(colData(rld)))
 pdf('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_PCA.pdf')
-groupCol <- c('#00C19F', '#F8766D')
+groupCol <- c('#F8766D', '#00C19F')
 ggplot(pcaData, aes(x = PC1, y = PC2, colour = Group)) +
   geom_point(size = 3) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
@@ -120,6 +120,47 @@ ggplot(pcaData, aes(x = PC1, y = PC2, colour = Group)) +
   geom_dl(aes(label = ID, color = Group), method = 'smart.grid')
 dev.off()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+##~~~~~~~~~~~~~~~~~~~volcano plot~~~~~~~~~~~~~~~~~~~~~~~~~~
+library('ggplot2')
+library('latex2exp')
+
+## separate up and down
+sig <- rep('no', nrow(res))
+sig[res$log2FoldChange > 0 & sigLogic]  <- 'up'
+sig[res$log2FoldChange < 0 & sigLogic]  <- 'down'
+
+voldt <- data.frame(padj = -log10(res$padj),
+                    FC = res$log2FoldChange,
+                    Type = sig)
+## remove padj NA and no Inf
+voldt <- voldt[!(is.na(voldt$padj) | is.infinite(voldt$padj)), ]
+
+cairo_pdf('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_DEG_FC1dot5_volplot.pdf')
+ggplot(voldt, aes(x = FC, y = padj, colour = Type)) +
+  geom_point(alpha = 0.75) +
+  scale_color_manual(values=c('forestgreen', 'grey60', 'firebrick'),
+                     labels = c('down-regulate DEGs', 'unchanged genes', 'up-regulated DEGs')) +
+  geom_vline(xintercept = -log2(1.5), linetype = 'dashed', color = 'grey70') +
+  geom_vline(xintercept= log2(1.5), linetype = 'dashed', color = 'grey70') +
+  xlim(-5, 5) +
+  xlab(TeX('$\\log_{2}$(FoldChange)')) +
+  ylab(TeX('$-\\log_{10}$(adjusted P-value)'))
+dev.off()
+
+cairo_pdf('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results/degseq24h_DEG_FC2_volplot.pdf')
+ggplot(voldt, aes(x = FC, y = padj, colour = Type)) +
+  geom_point(alpha = 0.75) +
+  scale_color_manual(values=c('forestgreen', 'grey60', 'firebrick'),
+                     labels = c('down-regulate DEGs', 'unchanged genes', 'up-regulated DEGs')) +
+  geom_vline(xintercept = -1, linetype = 'dashed', color = 'grey70') +
+  geom_vline(xintercept = 1, linetype = 'dashed', color = 'grey70') +
+  xlim(-5, 5) +
+  xlab(TeX('$\\log_{2}$(FoldChange)')) +
+  ylab(TeX('$-\\log_{10}$(adjusted P-value)'))
+dev.off()
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~~~edgeR~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cts <- htCountSelect$counts
