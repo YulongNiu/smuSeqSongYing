@@ -1,7 +1,7 @@
 #####################KEGG####################################
-library('KEGGAPI')
+setwd('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results')
 
-res <- read.csv('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2_whole.csv', row.names = 1, stringsAsFactor = FALSE)
+library('KEGGAPI')
 
 smuPathRaw <- getKEGGPathGenes('smu')
 smuPathRaw <- sapply(smuPathRaw, function(x) {
@@ -14,41 +14,47 @@ smuKEGG <- lapply(smuPathRaw, function(x) {
   return(x[x %in% smuIDs])
 })
 
-save(smuKEGG, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/smuKEGG.RData')
+save(smuKEGG, file = 'smuKEGG.RData')
 #############################################################
 
 ##########################GO#################################
-load('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/smuGO.RData')
+setwd('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results')
 
-res <- read.csv('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2_whole.csv', row.names = 1, stringsAsFactor = FALSE)
+load('kallisto_results/smuGO.RData')
+
+res <- read.csv('degseq4h_whole.csv', stringsAsFactor = FALSE)
 
 smuIDs <- res[, 1]
 smuGO <- lapply(smuGO, function(x) {
   return(x[x %in% smuIDs])
 })
 
-save(smuGO, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/smuGO.RData')
+save(smuGO, file = 'kallisto_results/smuGO.RData')
 #############################################################
 
 ##########################GO analysis###########################
+setwd('/extDisk1/RESEARCH/smuSeqSongYing/kallisto_results')
+
 library('goseq')
 library('GO.db')
 library('foreach')
 library('doMC')
 library('KEGGAPI')
+library('magrittr')
 
-registerDoMC(4)
+registerDoMC(8)
 
-load('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/smuGO.RData')
-load('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/smuKEGG.RData')
-res <- read.csv('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/degseq2_whole.csv', row.names = 1, stringsAsFactor = FALSE)
+load('smuGO.RData')
+load('smuKEGG.RData')
+res <- read.csv('degseq24h_whole.csv', stringsAsFactor = FALSE)
 
 ## remove 0 terms
-smuGO <- smuGO[sapply(smuGO, length) > 0]
-smuKEGG <- smuKEGG[sapply(smuKEGG, length) > 0]
+smuGO %<>% `[`(sapply(smuGO, length) > 0)
+smuKEGG %<>% `[`(sapply(smuKEGG, length) > 0)
 
 ## padj < 0.01 & |log2FC| > 1
-degVecLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > 1
+degVecLogic <- res$padj < 0.01 & abs(res$log2FoldChange) > log2(2)
+degVecLogic[is.na(degVecLogic)] <- FALSE
 degVec <- as.integer(degVecLogic)
 names(degVec) <- res$GeneID
 
@@ -60,8 +66,8 @@ GOMat <- foreach(i = 1:length(smuGO), .combine = rbind) %dopar% {
   return(eachMat)
 }
 GOMat <- as.data.frame(GOMat)
-GOTestWithCat <- goseq(pwf, gene2cat = GOMat, use_genes_without_cat = TRUE)
-GOTestWithCat <- GOTestWithoutCat[!is.na(GOTestWithCat$ontology), ]
+GOTestWithCat <- goseq(pwf, gene2cat = GOMat, use_genes_without_cat = FALSE)
+GOTestWithCat <- GOTestWithCat[!is.na(GOTestWithCat$ontology), ]
 
 ## add ablog2FC
 goSub <- smuGO[match(GOTestWithCat[, 1], names(smuGO))]
@@ -75,7 +81,7 @@ GOTestWithCat$abLogFC <- abLogFC
 termCat <- c('BP', 'MF', 'CC')
 for (i in termCat) {
   write.csv(GOTestWithCat[GOTestWithCat$ontology == i, ],
-            paste0('/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/DESeq2_', i, '_withcat.csv'))
+            paste0('degseq24h_FC2_', i, '_withcat.csv'))
 }
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -94,7 +100,7 @@ KEGGMat <- foreach(i = 1:length(smuKEGG), .combine = rbind) %dopar% {
 }
 KEGGMat <- as.data.frame(KEGGMat)
 
-KEGGTestWithCat <- goseq(pwf, gene2cat = KEGGMat, use_genes_without_cat = TRUE)
+KEGGTestWithCat <- goseq(pwf, gene2cat = KEGGMat, use_genes_without_cat = FALSE)
 KEGGTestWithCat$term <- pathAnno[match(KEGGTestWithCat[, 'category'], pathAnno[, 1]), 2]
 KEGGTestWithCat$ontology <- 'KEGG'
 
@@ -105,6 +111,6 @@ abLogFC <- sapply(goSub, function(x) {
 })
 KEGGTestWithCat$abLogFC <- abLogFC
 
-write.csv(KEGGTestWithCat, file = '/home/Yulong/RESEARCH/SongYing_MJ201409021010/Rockhopper_Results/DESeq2_KEGG_withcat.csv')
+write.csv(KEGGTestWithCat, file = 'degseq24h_FC2_KEGG_withcat.csv')
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ################################################################
